@@ -266,6 +266,7 @@ function animateFeedback() {
   let currentPointIndex = 1
 
   const drawDashLine = () => {
+    if (!ctx || !canvas.value) return
     if (currentPointIndex > points.length) {
       // Сохраняем эталонный штрих как успешный
       userStrokes.push([...points])
