@@ -210,12 +210,7 @@ function redrawCanvas() {
   // Рисуем все успешные штрихи
   for (const stroke of userStrokes) {
     ctx.strokeStyle = '#00ff00' // зелёный цвет для успешных штрихов
-    ctx.beginPath()
-    ctx.moveTo(stroke[0].x, stroke[0].y)
-    for (let i = 1; i < stroke.length; i++) {
-      ctx.lineTo(stroke[i].x, stroke[i].y)
-    }
-    ctx.stroke()
+    drawSmoothStroke(ctx, stroke)
   }
 
   // Рисуем текущий штрих пользователя (чёрный)
@@ -241,14 +236,9 @@ function redrawAllButLast() {
   drawBackground()
 
   // Рисуем успешные штрихи
-  ctx.strokeStyle = '#00ff00'
   for (const stroke of userStrokes) {
-    ctx.beginPath()
-    ctx.moveTo(stroke[0].x, stroke[0].y)
-    for (let i = 1; i < stroke.length; i++) {
-      ctx.lineTo(stroke[i].x, stroke[i].y)
-    }
-    ctx.stroke()
+    ctx.strokeStyle = '#00ff00'
+    drawSmoothStroke(ctx, stroke)
   }
 }
 
@@ -276,42 +266,56 @@ function animateFeedback() {
   let currentPointIndex = 1
 
   const drawDashLine = () => {
-    if (!ctx || !canvas.value) return
     if (currentPointIndex > points.length) {
-      // Сохраняем успешный штрих в `userStrokes`
+      // Сохраняем эталонный штрих как успешный
       userStrokes.push([...points])
-      // Перерисовываем всё, включая зелёные штрихи
-      redrawCanvas()
+      redrawCanvas() // обновляем всё, оставляя зелёные штрихи
       return
     }
 
     // Очистка временного канваса
     tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height)
-
-    // Рисуем часть эталонного штриха
     tempCtx.beginPath()
+
+    // Рисуем часть штриха с плавным скруглением
     tempCtx.moveTo(points[0].x, points[0].y)
-    for (let i = 1; i < currentPointIndex; i++) {
-      tempCtx.lineTo(points[i].x, points[i].y)
+
+    for (let i = 1; i < currentPointIndex && i < points.length; i++) {
+      const midX = (points[i].x + points[Math.min(i + 1, points.length - 1)].x) / 2
+      const midY = (points[i].y + points[Math.min(i + 1, points.length - 1)].y) / 2
+
+      tempCtx.quadraticCurveTo(points[i].x, points[i].y, midX, midY)
     }
+
+    // Если дошли до конца — дорисуем финальную точку
+    if (currentPointIndex === points.length) {
+      tempCtx.lineTo(points[points.length - 1].x, points[points.length - 1].y)
+    }
+
     tempCtx.stroke()
 
     // Перерисовываем основной холст
     ctx.clearRect(0, 0, canvas.value.width, canvas.value.height)
-    drawBackground() // фоновые штрихи
+    drawBackground() // фоновые штрихи полупрозрачные
 
-    // Рисуем успешные зелёные штрихи
+    // Рисуем уже пройденные штрихи (зелёные)
     ctx.strokeStyle = '#00ff00'
     for (const stroke of userStrokes) {
       ctx.beginPath()
       ctx.moveTo(stroke[0].x, stroke[0].y)
-      for (let i = 1; i < stroke.length; i++) {
-        ctx.lineTo(stroke[i].x, stroke[i].y)
+      for (let j = 1; j < stroke.length - 1; j++) {
+        const midX = (stroke[j].x + stroke[j + 1].x) / 2
+        const midY = (stroke[j].y + stroke[j + 1].y) / 2
+
+        ctx.quadraticCurveTo(stroke[j].x, stroke[j].y, midX, midY)
+      }
+      if (stroke.length > 1) {
+        ctx.lineTo(stroke[stroke.length - 1].x, stroke[stroke.length - 1].y)
       }
       ctx.stroke()
     }
 
-    // Рисуем текущую анимацию поверх
+    // Рисуем текущую анимацию
     ctx.drawImage(tempCanvas, 0, 0)
 
     currentPointIndex++
