@@ -281,39 +281,16 @@ function animateFeedback() {
     // Рисуем часть штриха с плавным скруглением
     tempCtx.moveTo(points[0].x, points[0].y)
 
-    for (let i = 1; i < currentPointIndex && i < points.length; i++) {
-      const midX = (points[i].x + points[Math.min(i + 1, points.length - 1)].x) / 2
-      const midY = (points[i].y + points[Math.min(i + 1, points.length - 1)].y) / 2
-
-      tempCtx.quadraticCurveTo(points[i].x, points[i].y, midX, midY)
-    }
-
-    // Если дошли до конца — дорисуем финальную точку
-    if (currentPointIndex === points.length) {
-      tempCtx.lineTo(points[points.length - 1].x, points[points.length - 1].y)
-    }
-
-    tempCtx.stroke()
+    drawSmoothStroke(tempCtx, points)
 
     // Перерисовываем основной холст
     ctx.clearRect(0, 0, canvas.value.width, canvas.value.height)
     drawBackground() // фоновые штрихи полупрозрачные
 
     // Рисуем уже пройденные штрихи (зелёные)
-    ctx.strokeStyle = '#00ff00'
     for (const stroke of userStrokes) {
-      ctx.beginPath()
-      ctx.moveTo(stroke[0].x, stroke[0].y)
-      for (let j = 1; j < stroke.length - 1; j++) {
-        const midX = (stroke[j].x + stroke[j + 1].x) / 2
-        const midY = (stroke[j].y + stroke[j + 1].y) / 2
-
-        ctx.quadraticCurveTo(stroke[j].x, stroke[j].y, midX, midY)
-      }
-      if (stroke.length > 1) {
-        ctx.lineTo(stroke[stroke.length - 1].x, stroke[stroke.length - 1].y)
-      }
-      ctx.stroke()
+      ctx.strokeStyle = '#00ff00'
+      drawSmoothStroke(ctx, stroke)
     }
 
     // Рисуем текущую анимацию
