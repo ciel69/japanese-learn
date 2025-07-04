@@ -502,9 +502,11 @@ defineExpose({
   resetDrawing,
 })
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('resize', initCanvas)
   initCanvas()
+  // const strokes = await loadKanjiData('本')
+  // console.log('strokes', strokes)
 })
 
 onBeforeUnmount(() => {

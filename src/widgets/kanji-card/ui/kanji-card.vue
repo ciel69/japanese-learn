@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { DrawingBoard } from '@/features/draw-stroke'
+
+import { loadKanjiData } from '@/utils/kanjivg-loader'
+
+const isLoading = ref(false)
 
 // Координаты точек должны быть в относительных значениях (0-1)
 // для корректной работы с разными размерами холста
@@ -44,12 +48,22 @@ const kanjiTemplate = ref({
     },
   ],
 })
+
+onMounted(async () => {
+  const strokes = await loadKanjiData('日')
+  if (strokes) {
+    kanjiTemplate.value = {
+      strokes: strokes.map((points) => ({ points })),
+    }
+    isLoading.value = true
+  }
+})
 </script>
 
 <template>
   <div class="kanji-card">
     <h2>Практика написания иероглифа</h2>
-    <div class="drawing-container">
+    <div v-if="isLoading" class="drawing-container">
       <DrawingBoard :template="kanjiTemplate" class="drawing-board" />
     </div>
     <div class="instructions">
