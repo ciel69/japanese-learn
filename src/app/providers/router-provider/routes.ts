@@ -1,11 +1,9 @@
-import HomeView from '@/pages/HomeView.vue'
-
 export default function getRoutes() {
   return [
     {
       path: '/',
       name: 'home',
-      component: HomeView,
+      component: import('@/pages/draw-page.vue'),
     },
     {
       path: '/about',
