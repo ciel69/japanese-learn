@@ -1,9 +1,11 @@
+import DrawPage from '@/pages/draw-page.vue'
+
 export default function getRoutes() {
   return [
     {
       path: '/',
       name: 'home',
-      component: import('@/pages/draw-page.vue'),
+      component: DrawPage,
     },
     {
       path: '/about',
