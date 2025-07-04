@@ -78,13 +78,14 @@ onMounted(async () => {
       <input type="text" v-model="textSearch" />
       <button type="submit">Найти</button>
     </form>
-
-    <h2>Практика написания иероглифа</h2>
-    <div v-if="isLoading" class="drawing-container">
-      <DrawingBoard :template="kanjiTemplate" class="drawing-board" />
-    </div>
-    <div class="instructions">
-      <p>Нарисуйте иероглиф в правильном порядке штрихов</p>
+    <div v-if="isLoading">
+      <h2>Практика написания иероглифа</h2>
+      <div class="drawing-container">
+        <DrawingBoard :template="kanjiTemplate" class="drawing-board" />
+      </div>
+      <div class="instructions">
+        <p>Нарисуйте иероглиф в правильном порядке штрихов</p>
+      </div>
     </div>
   </div>
 </template>
