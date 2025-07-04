@@ -1,4 +1,4 @@
-const KANJI_BASE_URL = '/kanjivg/kanjivg-master/kanji'
+const KANJI_BASE_URL = '/japanese-learn/kanjivg/kanjivg-master/kanji'
 
 export async function loadKanjiData(character: string) {
   try {
