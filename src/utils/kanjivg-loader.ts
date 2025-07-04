@@ -182,20 +182,11 @@ function parseKanjiSvg(svgText: string) {
     return aNum - bNum
   })
 
-  console.log('strokePaths', strokePaths)
-
   strokePaths.forEach((path) => {
-    // const points = []
     const pathData = path.getAttribute('d')
-    // const currentX = 0
-    // const currentY = 0
-
-    console.log('pathData', pathData)
     if (pathData) {
-      const test = parsePathD(pathData)
-      console.log('test', test)
-      const normalizePoint = normalizePoints(test, 109, 109)
-      console.log('normalizePoint', normalizePoint)
+      const points = parsePathD(pathData)
+      const normalizePoint = normalizePoints(points, 109, 109)
       strokes.push(normalizePoint)
     }
   })

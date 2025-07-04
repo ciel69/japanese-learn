@@ -5,6 +5,7 @@ import { DrawingBoard } from '@/features/draw-stroke'
 import { loadKanjiData } from '@/utils/kanjivg-loader'
 
 const isLoading = ref(false)
+const textSearch = ref('')
 
 // Координаты точек должны быть в относительных значениях (0-1)
 // для корректной работы с разными размерами холста
@@ -49,19 +50,35 @@ const kanjiTemplate = ref({
   ],
 })
 
-onMounted(async () => {
-  const strokes = await loadKanjiData('日')
+const loadKanji = async () => {
+  isLoading.value = false
+  const strokes = await loadKanjiData(textSearch.value)
   if (strokes) {
     kanjiTemplate.value = {
       strokes: strokes.map((points) => ({ points })),
     }
     isLoading.value = true
   }
+}
+
+onMounted(async () => {
+  const strokes = await loadKanjiData('鶫')
+  if (strokes) {
+    kanjiTemplate.value = {
+      strokes: strokes.map((points) => ({ points })),
+    }
+  }
 })
 </script>
 
 <template>
   <div class="kanji-card">
+    <p>Поиск иероглифа</p>
+    <form @submit.prevent="loadKanji">
+      <input type="text" v-model="textSearch" />
+      <button type="submit">Найти</button>
+    </form>
+
     <h2>Практика написания иероглифа</h2>
     <div v-if="isLoading" class="drawing-container">
       <DrawingBoard :template="kanjiTemplate" class="drawing-board" />

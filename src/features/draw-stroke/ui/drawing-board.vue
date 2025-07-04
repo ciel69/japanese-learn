@@ -44,7 +44,7 @@ const userStrokes: Point[][] = []
 
 const brushStyle = {
   color: '#000',
-  width: 4,
+  width: 10,
   lineCap: 'round' as CanvasLineCap,
 }
 
@@ -108,8 +108,8 @@ function drawBackground() {
 
   // Рисуем уже выполненные пользователем штрихи
   ctx.globalAlpha = 1
-  ctx.strokeStyle = '#00ff00'
   for (const stroke of userStrokes) {
+    ctx.strokeStyle = '#00ff00'
     drawSmoothStroke(ctx, stroke)
   }
 
@@ -171,9 +171,9 @@ function endDrawing() {
   const expectedStroke = props.template.strokes[expectedIndex]
 
   if (isStrokeCorrect(currentStroke, expectedStroke.points)) {
-    userStrokes.push([...expectedStroke.points])
     currentStroke = []
     animateFeedback(expectedStroke.points)
+    userStrokes.push([...expectedStroke.points])
   } else {
     currentStroke = []
     drawBackground()
@@ -254,11 +254,12 @@ function isStrokeCorrect(userPoints: Point[], targetPoints: Point[]): boolean {
 
   // 3. Проверка общего направления
   const directionValid = checkDirection(normalizedUser, normalizedTarget)
+  console.log('directionValid', directionValid)
   if (!directionValid) return false
 
   // 4. Проверка формы кривой
   const shapeValid = checkShape(normalizedUser, normalizedTarget)
-
+  console.log('shapeValid', shapeValid)
   if (!shapeValid) return false
 
   // 5. Проверка средней и максимальной девиации
@@ -266,6 +267,9 @@ function isStrokeCorrect(userPoints: Point[], targetPoints: Point[]): boolean {
 
   const MAX_DEVIATION = 0.08 // 8%
   const AVG_DEVIATION = 0.05 // 5%
+
+  console.log('maxDeviation', maxDeviation)
+  console.log('avgDeviation', avgDeviation)
 
   return maxDeviation <= MAX_DEVIATION && avgDeviation <= AVG_DEVIATION
 }
@@ -327,7 +331,7 @@ function checkShape(userPoints: Point[], targetPoints: Point[]): boolean {
   // Проверяем соответствие ключевых точек
   for (let i = 0; i < userKeyPoints.length; i++) {
     const dist = distance(userKeyPoints[i], targetKeyPoints[i])
-    if (dist > 0.5) {
+    if (dist > 0.6) {
       // Порог 10% от размера холста
       return false
     }
@@ -463,7 +467,7 @@ function animateFeedback(points: Point[]) {
 
     tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height)
     tempCtx.strokeStyle = '#00ff00'
-    tempCtx.lineWidth = brushStyle.width + 2
+    tempCtx.lineWidth = brushStyle.width + 5
     tempCtx.lineCap = 'round'
 
     const visiblePoints = points.slice(0, progress + 1)
@@ -505,8 +509,6 @@ defineExpose({
 onMounted(async () => {
   window.addEventListener('resize', initCanvas)
   initCanvas()
-  // const strokes = await loadKanjiData('本')
-  // console.log('strokes', strokes)
 })
 
 onBeforeUnmount(() => {
