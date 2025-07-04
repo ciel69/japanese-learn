@@ -1,4 +1,5 @@
-const KANJI_BASE_URL = '/japanese-learn/kanjivg/kanjivg-master/kanji'
+const svhPath = import.meta.env.PROD ? '/japanese-learn' : ''
+const KANJI_BASE_URL = `${svhPath}/kanjivg/kanjivg-master/kanji`
 
 export async function loadKanjiData(character: string) {
   try {

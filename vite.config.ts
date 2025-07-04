@@ -7,7 +7,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: 'japanese-learn',
+  base: process.env.NODE_ENV === 'production' ? 'japanese-learn' : '/',
   plugins: [vue(), vueJsx(), vueDevTools()],
   resolve: {
     alias: {
