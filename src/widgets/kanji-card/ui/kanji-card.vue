@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { DrawingBoard } from '@/features/draw-stroke'
+import { useRoute, useRouter } from 'vue-router'
 
+import { DrawingBoard } from '@/features/draw-stroke'
 import { loadKanjiData } from '@/utils/kanjivg-loader'
+
+const route = useRoute()
+const router = useRouter()
 
 const isLoading = ref(false)
 const textSearch = ref('')
@@ -52,6 +56,10 @@ const kanjiTemplate = ref({
 
 const loadKanji = async () => {
   isLoading.value = false
+  router.push({
+    path: '/',
+    query: { search: textSearch.value },
+  })
   const strokes = await loadKanjiData(textSearch.value)
   if (strokes) {
     kanjiTemplate.value = {
@@ -62,7 +70,12 @@ const loadKanji = async () => {
 }
 
 onMounted(async () => {
-  const strokes = await loadKanjiData('鶫')
+  let strokes = null
+  if (route.query.search) {
+    textSearch.value = String(route.query.search)
+    strokes = await loadKanjiData(String(route.query.search))
+    isLoading.value = true
+  }
   if (strokes) {
     kanjiTemplate.value = {
       strokes: strokes.map((points) => ({ points })),
@@ -81,7 +94,7 @@ onMounted(async () => {
     <div v-if="isLoading">
       <h2>Практика написания иероглифа</h2>
       <div class="drawing-container">
-        <DrawingBoard :template="kanjiTemplate" class="drawing-board" />
+        <DrawingBoard :template="kanjiTemplate" showHints class="drawing-board" />
       </div>
       <div class="instructions">
         <p>Нарисуйте иероглиф в правильном порядке штрихов</p>

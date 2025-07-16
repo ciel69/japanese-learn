@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 
 interface Point {
   x: number
@@ -30,9 +30,17 @@ interface KanjiTemplate {
   strokes: Stroke[]
 }
 
-const props = defineProps<{
-  template: KanjiTemplate
-}>()
+const props = withDefaults(
+  defineProps<{
+    template: KanjiTemplate
+    showHints?: boolean
+    hintColor?: string
+  }>(),
+  {
+    showHints: false,
+    hintColor: 'rgba(34,246,237,0.52)',
+  },
+)
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 const container = ref<HTMLElement | null>(null)
@@ -41,6 +49,7 @@ let ctx: CanvasRenderingContext2D | null = null
 let isDrawing = false
 let currentStroke: Point[] = []
 const userStrokes: Point[][] = []
+const currentHintIndex = ref(0)
 
 const brushStyle = {
   color: '#000',
@@ -48,7 +57,7 @@ const brushStyle = {
   lineCap: 'round' as CanvasLineCap,
 }
 
-// Преобразует относительные координаты в абсолютные
+// Преобразование относительных координат в абсолютные
 function toAbsolute(point: Point): Point {
   if (!canvas.value) return point
   return {
@@ -72,10 +81,29 @@ function initCanvas() {
   drawBackground()
 }
 
-function drawSmoothStroke(ctx: CanvasRenderingContext2D, points: Point[]) {
+function drawSmoothStroke(
+  ctx: CanvasRenderingContext2D,
+  points: Point[],
+  style: {
+    color: string
+    width: number
+    lineCap: CanvasLineCap
+    dashed?: boolean
+  },
+) {
   if (points.length < 2) return
 
   const absPoints = points.map(toAbsolute)
+
+  ctx.save()
+  ctx.strokeStyle = style.color
+  ctx.lineWidth = style.width
+  ctx.lineCap = style.lineCap
+  if (style.dashed) {
+    ctx.setLineDash([5, 10])
+  } else {
+    ctx.setLineDash([])
+  }
 
   ctx.beginPath()
   ctx.moveTo(absPoints[0].x, absPoints[0].y)
@@ -89,6 +117,62 @@ function drawSmoothStroke(ctx: CanvasRenderingContext2D, points: Point[]) {
 
   ctx.lineTo(absPoints[absPoints.length - 1].x, absPoints[absPoints.length - 1].y)
   ctx.stroke()
+  ctx.restore()
+}
+
+function drawHint(stroke: Stroke) {
+  if (!ctx || !canvas.value || !props.showHints) return
+
+  const points = stroke.points
+  if (points.length < 2) return
+
+  // Рисуем пунктирную линию вдоль всего штриха
+  drawSmoothStroke(ctx, points, {
+    color: props.hintColor,
+    width: brushStyle.width / 2,
+    lineCap: 'round',
+    dashed: true,
+  })
+
+  // Рисуем стрелку в начале штриха
+  const p1 = toAbsolute(points[0])
+  const p2 = toAbsolute(points[1])
+
+  // Направление стрелки
+  const dx = p2.x - p1.x
+  const dy = p2.y - p1.y
+  const angle = Math.atan2(dy, dx)
+
+  // Размеры стрелки
+  const arrowLength = canvas.value.width * 0.08
+
+  ctx.save()
+  ctx.strokeStyle = props.hintColor
+  ctx.fillStyle = props.hintColor
+  ctx.lineWidth = 3
+
+  // Линия стрелки (короткая)
+  ctx.beginPath()
+  ctx.moveTo(p1.x, p1.y)
+  ctx.lineTo(p1.x + dx * 0.2, p1.y + dy * 0.2)
+  ctx.stroke()
+
+  // Голова стрелки
+  ctx.beginPath()
+  ctx.moveTo(p1.x, p1.y)
+  ctx.lineTo(
+    p1.x - arrowLength * Math.cos(angle - Math.PI / 3),
+    p1.y - arrowLength * Math.sin(angle - Math.PI / 10),
+  )
+
+  ctx.lineTo(
+    p1.x - arrowLength * Math.cos(angle + Math.PI / 3),
+    p1.y - arrowLength * Math.sin(angle + Math.PI / 10),
+  )
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.restore()
 }
 
 function drawBackground() {
@@ -103,24 +187,41 @@ function drawBackground() {
   ctx.lineCap = 'round'
 
   for (const stroke of props.template.strokes) {
-    drawSmoothStroke(ctx, stroke.points)
+    drawSmoothStroke(ctx, stroke.points, {
+      color: '#000',
+      width: brushStyle.width,
+      lineCap: 'round',
+    })
   }
 
   // Рисуем уже выполненные пользователем штрихи
   ctx.globalAlpha = 1
   for (const stroke of userStrokes) {
-    ctx.strokeStyle = '#00ff00'
-    drawSmoothStroke(ctx, stroke)
+    drawSmoothStroke(ctx, stroke, {
+      color: '#3a9f3a',
+      width: brushStyle.width,
+      lineCap: 'round',
+    })
   }
 
   // Рисуем текущий штрих
   if (currentStroke.length > 1) {
-    ctx.strokeStyle = '#000'
-    drawSmoothStroke(ctx, currentStroke)
+    drawSmoothStroke(ctx, currentStroke, {
+      color: '#000',
+      width: brushStyle.width,
+      lineCap: 'round',
+    })
+  }
+
+  // Рисуем подсказку для текущего штриха
+  if (props.showHints && currentHintIndex.value < props.template.strokes.length) {
+    drawHint(props.template.strokes[currentHintIndex.value])
   }
 
   ctx.globalAlpha = 1
 }
+
+// Остальные функции остаются без изменений (getRelativePosition, startDrawing, draw, endDrawing, etc.)
 
 function getRelativePosition(e: MouseEvent | TouchEvent): Point {
   if (!canvas.value) return { x: 0, y: 0 }
@@ -174,6 +275,11 @@ function endDrawing() {
     currentStroke = []
     animateFeedback(expectedStroke.points)
     userStrokes.push([...expectedStroke.points])
+
+    // Переходим к следующей подсказке
+    if (props.showHints) {
+      currentHintIndex.value = userStrokes.length
+    }
   } else {
     currentStroke = []
     drawBackground()
@@ -201,10 +307,9 @@ function normalizePoints(points: Point[], targetLength: number): Point[] {
   let currentSegmentIndex = 0
   let accumulatedLength = 0
 
-  // Длина шага между точками нормализованного массива
   const stepLength = totalLength / (targetLength - 1)
 
-  result.push(points[0]) // добавляем начальную точку
+  result.push(points[0])
 
   for (let i = 1; i < targetLength - 1; i++) {
     const targetDistance = i * stepLength
@@ -229,16 +334,14 @@ function normalizePoints(points: Point[], targetLength: number): Point[] {
     })
   }
 
-  result.push(points[points.length - 1]) // добавляем конечную точку
-
+  result.push(points[points.length - 1])
   return result
 }
 
 function isStrokeCorrect(userPoints: Point[], targetPoints: Point[]): boolean {
   if (userPoints.length < 2 || targetPoints.length < 2) return false
 
-  // 1. Проверка начальной и конечной точек
-  const startThreshold = 0.07 // 7% от размера холста
+  const startThreshold = 0.07
   const endThreshold = 0.07
 
   const startDist = distance(userPoints[0], targetPoints[0])
@@ -248,35 +351,24 @@ function isStrokeCorrect(userPoints: Point[], targetPoints: Point[]): boolean {
     return false
   }
 
-  // 2. Нормализация точек для сравнения
   const normalizedUser = normalizePoints(userPoints, 20)
   const normalizedTarget = normalizePoints(targetPoints, 20)
 
-  // 3. Проверка общего направления
   const directionValid = checkDirection(normalizedUser, normalizedTarget)
-  console.log('directionValid', directionValid)
   if (!directionValid) return false
 
-  // 4. Проверка формы кривой
   const shapeValid = checkShape(normalizedUser, normalizedTarget)
-  console.log('shapeValid', shapeValid)
   if (!shapeValid) return false
 
-  // 5. Проверка средней и максимальной девиации
   const { maxDeviation, avgDeviation } = calculateDeviations(normalizedUser, normalizedTarget)
 
-  const MAX_DEVIATION = 0.08 // 8%
-  const AVG_DEVIATION = 0.05 // 5%
-
-  console.log('maxDeviation', maxDeviation)
-  console.log('avgDeviation', avgDeviation)
+  const MAX_DEVIATION = 0.08
+  const AVG_DEVIATION = 0.05
 
   return maxDeviation <= MAX_DEVIATION && avgDeviation <= AVG_DEVIATION
 }
 
-// Проверяет общее направление штриха
 function checkDirection(userPoints: Point[], targetPoints: Point[]): boolean {
-  // Берем начальный, средний и конечный векторы
   const midIndex = Math.floor(userPoints.length / 2)
 
   const userVectors = [
@@ -298,7 +390,6 @@ function checkDirection(userPoints: Point[], targetPoints: Point[]): boolean {
     },
   ]
 
-  // Проверяем углы между векторами
   const dot1 = userVectors[0].x * targetVectors[0].x + userVectors[0].y * targetVectors[0].y
   const dot2 = userVectors[1].x * targetVectors[1].x + userVectors[1].y * targetVectors[1].y
 
@@ -310,29 +401,24 @@ function checkDirection(userPoints: Point[], targetPoints: Point[]): boolean {
   const angle1 = Math.acos(dot1 / (magUser1 * magTarget1 + 1e-8))
   const angle2 = Math.acos(dot2 / (magUser2 * magTarget2 + 1e-8))
 
-  return angle1 < Math.PI / 3 && angle2 < Math.PI / 3 // Угол меньше 60 градусов
+  return angle1 < Math.PI / 3 && angle2 < Math.PI / 3
 }
 
 function checkShape(userPoints: Point[], targetPoints: Point[]): boolean {
-  // Для прямых линий используем специальную проверку
   if (targetPoints.length <= 2) {
     return checkStraightLine(userPoints)
   }
 
-  // Для кривых используем сравнение по характерным точкам
   const userKeyPoints = getKeyPoints(userPoints)
   const targetKeyPoints = getKeyPoints(targetPoints)
 
-  // Если разное количество ключевых точек - формы разные
   if (userKeyPoints.length !== targetKeyPoints.length) {
     return false
   }
 
-  // Проверяем соответствие ключевых точек
   for (let i = 0; i < userKeyPoints.length; i++) {
     const dist = distance(userKeyPoints[i], targetKeyPoints[i])
     if (dist > 0.6) {
-      // Порог 10% от размера холста
       return false
     }
   }
@@ -340,33 +426,27 @@ function checkShape(userPoints: Point[], targetPoints: Point[]): boolean {
   return true
 }
 
-// Находит ключевые точки (точки с максимальной кривизной)
 function getKeyPoints(points: Point[]): Point[] {
   if (points.length < 3) return [...points]
 
   const curvatures: { index: number; value: number }[] = []
 
-  // Вычисляем кривизну для каждой точки (кроме крайних)
   for (let i = 1; i < points.length - 1; i++) {
     const curvature = calculateCurvature(points[i - 1], points[i], points[i + 1])
     curvatures.push({ index: i, value: curvature })
   }
 
-  // Сортируем по убыванию кривизны
   curvatures.sort((a, b) => b.value - a.value)
 
-  // Берем 3 точки с максимальной кривизной (или все, если точек меньше)
   const keyPointCount = Math.min(3, curvatures.length)
   const keyPoints = curvatures
     .slice(0, keyPointCount)
     .sort((a, b) => a.index - b.index)
     .map((item) => points[item.index])
 
-  // Всегда добавляем первую и последнюю точку
   return [points[0], ...keyPoints, points[points.length - 1]]
 }
 
-// Вычисляет кривизну в точке
 function calculateCurvature(p1: Point, p2: Point, p3: Point): number {
   const dx1 = p2.x - p1.x
   const dy1 = p2.y - p1.y
@@ -377,11 +457,9 @@ function calculateCurvature(p1: Point, p2: Point, p3: Point): number {
   const len1 = Math.hypot(dx1, dy1)
   const len2 = Math.hypot(dx2, dy2)
 
-  // Кривизна - нормированный векторный продукт
   return Math.abs(cross) / (len1 * len2 + 1e-8)
 }
 
-// Проверка прямой линии
 function checkStraightLine(points: Point[]): boolean {
   if (points.length < 3) return true
 
@@ -389,19 +467,17 @@ function checkStraightLine(points: Point[]): boolean {
   const end = points[points.length - 1]
   const lineLength = distance(start, end)
 
-  if (lineLength < 0.01) return true // Слишком короткая линия
+  if (lineLength < 0.01) return true
 
-  // Проверяем максимальное отклонение от прямой
   let maxDeviation = 0
   for (let i = 1; i < points.length - 1; i++) {
     const dev = distanceToLine(points[i], start, end)
     maxDeviation = Math.max(maxDeviation, dev)
   }
 
-  return maxDeviation / lineLength < 0.08 // Макс. отклонение 8%
+  return maxDeviation / lineLength < 0.08
 }
 
-// Вычисляет отклонения между точками
 function calculateDeviations(userPoints: Point[], targetPoints: Point[]) {
   let maxDeviation = 0
   let totalDeviation = 0
@@ -418,7 +494,6 @@ function calculateDeviations(userPoints: Point[], targetPoints: Point[]) {
   }
 }
 
-// Вспомогательная функция: расстояние от точки до линии
 function distanceToLine(point: Point, lineStart: Point, lineEnd: Point): number {
   const A = point.x - lineStart.x
   const B = point.y - lineStart.y
@@ -466,13 +541,17 @@ function animateFeedback(points: Point[]) {
     }
 
     tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height)
-    tempCtx.strokeStyle = '#00ff00'
+    tempCtx.strokeStyle = '#3a9f3a'
     tempCtx.lineWidth = brushStyle.width + 5
     tempCtx.lineCap = 'round'
 
     const visiblePoints = points.slice(0, progress + 1)
     if (visiblePoints.length > 1) {
-      drawSmoothStroke(tempCtx, visiblePoints)
+      drawSmoothStroke(tempCtx, visiblePoints, {
+        color: '#3a9f3a',
+        width: brushStyle.width + 5,
+        lineCap: 'round',
+      })
     }
 
     ctx!.clearRect(0, 0, canvas.value!.width, canvas.value!.height)
@@ -499,12 +578,23 @@ function drawTouch(e: TouchEvent) {
 function resetDrawing() {
   currentStroke = []
   userStrokes.length = 0
+  currentHintIndex.value = 0
   drawBackground()
 }
 
 defineExpose({
   resetDrawing,
 })
+
+watch(
+  () => props.showHints,
+  (newVal) => {
+    if (newVal) {
+      currentHintIndex.value = userStrokes.length
+    }
+    drawBackground()
+  },
+)
 
 onMounted(async () => {
   window.addEventListener('resize', initCanvas)
