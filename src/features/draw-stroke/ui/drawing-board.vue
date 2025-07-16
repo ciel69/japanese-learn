@@ -120,6 +120,30 @@ function drawSmoothStroke(
   ctx.restore()
 }
 
+// Рисование стрелки направления
+function drawDirectionArrow(ctx: CanvasRenderingContext2D, start: Point, end: Point, size: number) {
+  const angle = Math.atan2(end.y - start.y, end.x - start.x)
+  const arrowSize = size * 0.5
+
+  ctx.save()
+  ctx.translate(start.x, start.y)
+  ctx.rotate(angle)
+
+  // Галочка направления
+  ctx.beginPath()
+  ctx.moveTo(0, 0)
+  ctx.lineTo(-arrowSize, -arrowSize / 2)
+  ctx.moveTo(0, 0)
+  ctx.lineTo(-arrowSize, arrowSize / 2)
+
+  ctx.lineWidth = 5
+  ctx.strokeStyle = props.hintColor
+  ctx.stroke()
+
+  ctx.restore()
+}
+
+// Рисование подсказки
 function drawHint(stroke: Stroke) {
   if (!ctx || !canvas.value || !props.showHints) return
 
@@ -134,45 +158,9 @@ function drawHint(stroke: Stroke) {
     dashed: true,
   })
 
-  // Рисуем стрелку в начале штриха
-  const p1 = toAbsolute(points[0])
-  const p2 = toAbsolute(points[1])
-
-  // Направление стрелки
-  const dx = p2.x - p1.x
-  const dy = p2.y - p1.y
-  const angle = Math.atan2(dy, dx)
-
-  // Размеры стрелки
-  const arrowLength = canvas.value.width * 0.08
-
-  ctx.save()
-  ctx.strokeStyle = props.hintColor
-  ctx.fillStyle = props.hintColor
-  ctx.lineWidth = 3
-
-  // Линия стрелки (короткая)
-  ctx.beginPath()
-  ctx.moveTo(p1.x, p1.y)
-  ctx.lineTo(p1.x + dx * 0.2, p1.y + dy * 0.2)
-  ctx.stroke()
-
-  // Голова стрелки
-  ctx.beginPath()
-  ctx.moveTo(p1.x, p1.y)
-  ctx.lineTo(
-    p1.x - arrowLength * Math.cos(angle - Math.PI / 3),
-    p1.y - arrowLength * Math.sin(angle - Math.PI / 10),
-  )
-
-  ctx.lineTo(
-    p1.x - arrowLength * Math.cos(angle + Math.PI / 3),
-    p1.y - arrowLength * Math.sin(angle + Math.PI / 10),
-  )
-  ctx.closePath()
-  ctx.fill()
-
-  ctx.restore()
+  const start = toAbsolute(points[0])
+  const end = toAbsolute(points[5])
+  drawDirectionArrow(ctx, start, end, canvas.value.width * 0.08)
 }
 
 function drawBackground() {
