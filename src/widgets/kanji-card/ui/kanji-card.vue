@@ -56,8 +56,8 @@ const kanjiTemplate = ref({
 
 const loadKanji = async () => {
   isLoading.value = false
+  if (!textSearch.value) return
   router.push({
-    path: '/',
     query: { search: textSearch.value },
   })
   const strokes = await loadKanjiData(textSearch.value)
