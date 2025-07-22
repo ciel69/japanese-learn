@@ -1,9 +1,13 @@
+import HomeView from '@/pages/HomeView.vue'
+import DrawView from '@/pages/draw-page.vue'
+import GrammarView from '@/pages/grammar-page.vue'
+
 export default function getRoutes() {
   return [
     {
       path: '/',
       name: 'home',
-      component: import('@/pages/HomeView.vue'),
+      component: HomeView,
     },
     {
       path: '/about',
@@ -13,12 +17,12 @@ export default function getRoutes() {
     {
       path: '/draw',
       name: 'draw',
-      component: () => import('@/pages/draw-page.vue'),
+      component: () => DrawView,
     },
     {
       path: '/grammar',
       name: 'grammar',
-      component: () => import('@/pages/grammar-page.vue'),
+      component: () => GrammarView,
     },
   ]
 }
