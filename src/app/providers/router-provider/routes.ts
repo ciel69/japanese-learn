@@ -17,12 +17,12 @@ export default function getRoutes() {
     {
       path: '/draw',
       name: 'draw',
-      component: () => DrawView,
+      component: DrawView,
     },
     {
       path: '/grammar',
       name: 'grammar',
-      component: () => GrammarView,
+      component: GrammarView,
     },
   ]
 }
