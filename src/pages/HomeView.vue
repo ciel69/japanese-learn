@@ -1,9 +1,22 @@
 <script setup lang="ts">
-import TheWelcome from '@/widgets/TheWelcome.vue'
+const optionsMenu = [
+  {
+    url: '/draw',
+    label: 'Иероглифы',
+  },
+  {
+    url: '/grammar',
+    label: 'Грамматика',
+  },
+]
 </script>
 
 <template>
   <main>
-    <TheWelcome />
+    <ul>
+      <li v-for="(option, index) in optionsMenu" :key="index" class="text-center">
+        <router-link :to="option.url">{{ option.label }}</router-link>
+      </li>
+    </ul>
   </main>
 </template>
