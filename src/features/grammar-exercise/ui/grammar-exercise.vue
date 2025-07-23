@@ -26,6 +26,7 @@
           <span
             v-else
             class="word"
+            @click="speak(part)"
             v-tooltip="{
               content: () => getWordTranslation(part),
               triggers: ['click'],
@@ -119,6 +120,7 @@ const splitSentence = () => {
 }
 
 const speak = (text: string) => {
+  console.log('speak')
   if (!window.speechSynthesis) {
     alert('Ваш браузер не поддерживает Web Speech API')
     return
@@ -138,9 +140,6 @@ const getWordTranslation = (word: string) => {
   word = word.replace('。', '')
   if (!props.task.vocabulary) return 'Нет перевода'
   const translate = props.task.vocabulary[word.trim().toLowerCase()]
-  if (translate) {
-    speak(word)
-  }
   return translate || 'Нет перевода'
 }
 
