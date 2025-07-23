@@ -16,11 +16,11 @@ type Task = {
 
 const currentTask = ref<Task>({
   type: 'particle-choice',
-  sentence: '彼は ___ 本 ___ 読みました。',
+  sentence: '彼 ___ 本 ___ 読みました。',
   options: ['は', 'を', 'が', 'に'],
   correctAnswer: ['は', 'を'],
   vocabulary: {
-    彼は: 'он',
+    彼: 'он',
     本: 'книга',
     読みました: 'прочитал',
   },
