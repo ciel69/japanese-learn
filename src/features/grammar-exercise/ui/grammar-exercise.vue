@@ -118,12 +118,30 @@ const splitSentence = () => {
   filledBlanks.value = new Array(parts.filter((p) => p === '___').length).fill(null)
 }
 
+const speak = (text: string) => {
+  if (!window.speechSynthesis) {
+    alert('Ваш браузер не поддерживает Web Speech API')
+    return
+  }
+
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.lang = 'ja-JP'
+  utterance.rate = 1.0
+  utterance.pitch = 1.0
+
+  speechSynthesis.speak(utterance)
+}
+
 // Получаем перевод слова
 // todo тут будет запрос к бэку за переводом
 const getWordTranslation = (word: string) => {
   word = word.replace('。', '')
   if (!props.task.vocabulary) return 'Нет перевода'
-  return props.task.vocabulary[word.trim().toLowerCase()] || 'Нет перевода'
+  const translate = props.task.vocabulary[word.trim().toLowerCase()]
+  if (translate) {
+    speak(word)
+  }
+  return translate || 'Нет перевода'
 }
 
 // Доступные частицы для выбора (только для particle-choice)
