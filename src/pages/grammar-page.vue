@@ -11,6 +11,7 @@ type Task = {
   sentence: string
   options?: string[]
   correctAnswer: string | string[]
+  vocabulary?: Record<string, string> // Новое поле для словаря
 }
 
 const currentTask = ref<Task>({
@@ -18,6 +19,11 @@ const currentTask = ref<Task>({
   sentence: '彼は ___ 本 ___ 読みました。',
   options: ['は', 'を', 'が', 'に'],
   correctAnswer: ['は', 'を'],
+  vocabulary: {
+    彼は: 'он',
+    本: 'книга',
+    読みました: 'прочитал',
+  },
 })
 
 const handleComplete = () => {

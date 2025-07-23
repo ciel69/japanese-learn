@@ -23,11 +23,22 @@
           />
 
           <!-- Обычная часть предложения -->
-          <span v-else>{{ part }}</span>
+          <span
+            v-else
+            class="word"
+            v-tooltip="{
+              content: () => getWordTranslation(part),
+              triggers: ['click'],
+              loadingContent: 'Please wait...',
+              autoHide: true,
+            }"
+          >
+            {{ part }}
+          </span>
         </span>
       </div>
 
-      <!-- Варианты частиц для выбора (только в режиме particle-choice) -->
+      <!-- Варианты частиц для выбора -->
       <div
         class="particle-options"
         v-if="task.type === 'particle-choice' && availableParticles.length > 0"
@@ -69,6 +80,7 @@ type Props = {
   sentence: string
   options?: string[]
   correctAnswer: string | string[]
+  vocabulary?: Record<string, string> // Новое поле для словаря
 }
 
 const props = defineProps<{
@@ -104,6 +116,14 @@ const splitSentence = () => {
   sentenceParts.value = parts
   displayParts.value = [...parts]
   filledBlanks.value = new Array(parts.filter((p) => p === '___').length).fill(null)
+}
+
+// Получаем перевод слова
+// todo тут будет запрос к бэку за переводом
+const getWordTranslation = (word: string) => {
+  word = word.replace('。', '')
+  if (!props.task.vocabulary) return 'Нет перевода'
+  return props.task.vocabulary[word.trim().toLowerCase()] || 'Нет перевода'
 }
 
 // Доступные частицы для выбора (только для particle-choice)
@@ -214,6 +234,7 @@ onMounted(() => {
   border-radius: 8px;
   background-color: #f8f9fa;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .sentence-container {
@@ -229,6 +250,43 @@ onMounted(() => {
   border-radius: 8px;
   cursor: default;
   color: #333;
+}
+
+.word {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.word:hover {
+  background-color: #f0f0f0;
+}
+
+.word-tooltip {
+  position: absolute;
+  background-color: #333;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.word-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #333 transparent transparent transparent;
 }
 
 .blank-slot {
