@@ -75,6 +75,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useResponsiveVoice } from '@/utils'
 
 type Props = {
   type: 'particle-choice' | 'fill-in-the-blank'
@@ -98,6 +99,8 @@ const selectedParticles = ref<string[]>([])
 const showFeedback = ref(false)
 const isAnswerCorrect = ref(false)
 
+const { speak } = useResponsiveVoice()
+
 // Разбиваем предложение на части
 const splitSentence = () => {
   const parts = []
@@ -117,21 +120,6 @@ const splitSentence = () => {
   sentenceParts.value = parts
   displayParts.value = [...parts]
   filledBlanks.value = new Array(parts.filter((p) => p === '___').length).fill(null)
-}
-
-const speak = (text: string) => {
-  console.log('speak')
-  if (!window.speechSynthesis) {
-    alert('Ваш браузер не поддерживает Web Speech API')
-    return
-  }
-
-  const utterance = new SpeechSynthesisUtterance(text)
-  utterance.lang = 'ja-JP'
-  utterance.rate = 1.0
-  utterance.pitch = 1.0
-
-  speechSynthesis.speak(utterance)
 }
 
 // Получаем перевод слова
