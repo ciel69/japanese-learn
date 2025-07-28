@@ -87,8 +87,8 @@ onMounted(async () => {
 <template>
   <div class="kanji-card">
     <p>Поиск иероглифа</p>
-    <form @submit.prevent="loadKanji">
-      <input type="text" v-model="textSearch" />
+    <form class="flex space-x-4 justify-center gap-1" @submit.prevent="loadKanji">
+      <input type="text" class="bg-sky-50 p-1 rounded-lg text-black" v-model="textSearch" />
       <button type="submit">Найти</button>
     </form>
     <div v-if="isLoading">

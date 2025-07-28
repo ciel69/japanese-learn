@@ -8,6 +8,10 @@ const optionsMenu = [
     url: '/grammar',
     label: 'Грамматика',
   },
+  {
+    url: '/kana',
+    label: 'Кана',
+  },
 ]
 </script>
 

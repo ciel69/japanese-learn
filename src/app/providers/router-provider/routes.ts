@@ -1,6 +1,7 @@
 import HomeView from '@/pages/HomeView.vue'
 import DrawView from '@/pages/draw-page.vue'
 import GrammarView from '@/pages/grammar-page.vue'
+import KanaView from '@/pages/kana-page.vue'
 
 export default function getRoutes() {
   return [
@@ -23,6 +24,11 @@ export default function getRoutes() {
       path: '/grammar',
       name: 'grammar',
       component: GrammarView,
+    },
+    {
+      path: '/kana',
+      name: 'kana',
+      component: KanaView,
     },
   ]
 }

@@ -1,14 +1,26 @@
 const svhPath = import.meta.env.PROD ? '/japanese-learn' : ''
 const KANJI_BASE_URL = `${svhPath}/kanjivg/kanjivg-master/kanji`
 
-export async function loadKanjiData(character: string) {
+export async function loadKanjiSvg(character: string) {
   try {
     const codePoint = character.codePointAt(0)?.toString(16).padStart(5, '0')
     const response = await fetch(`${KANJI_BASE_URL}/${codePoint}.svg`)
     if (!response.ok) throw new Error('Kanji not found')
 
-    const svgText = await response.text()
-    return parseKanjiSvg(svgText)
+    return await response.text()
+  } catch (error) {
+    console.error(`Failed to load KanjiVG data for ${character}:`, error)
+    return null
+  }
+}
+
+export async function loadKanjiData(character: string) {
+  try {
+    const svgText = await loadKanjiSvg(character)
+    if (svgText) {
+      return parseKanjiSvg(svgText)
+    }
+    return null
   } catch (error) {
     console.error(`Failed to load KanjiVG data for ${character}:`, error)
     return null
