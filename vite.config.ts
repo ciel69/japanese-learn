@@ -23,6 +23,28 @@ export default defineConfig({
       devOptions: {
         enabled: true,
       },
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      manifest: {
+        name: 'Приложение по изучению японского',
+        short_name: 'Kanji Flow',
+        start_url: 'https://ciel69.github.io/japanese-learn/',
+        theme_color: '#333',
+        display: 'browser',
+        icons: [
+          {
+            src: 'android-chrome-192x192.png',
+            type: 'image/png',
+            sizes: '192x192',
+            purpose: 'any maskable',
+          },
+          {
+            src: 'android-chrome-512x512.png',
+            type: 'image/png',
+            sizes: '512x512',
+            purpose: 'any maskable',
+          },
+        ],
+      },
     }),
     vueDevTools(),
   ],
