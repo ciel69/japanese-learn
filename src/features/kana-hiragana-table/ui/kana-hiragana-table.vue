@@ -1,6 +1,7 @@
 <template>
   <div class="kana-table-container">
     <h2 class="text-2xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">Хирагана</h2>
+
     <!-- Таблица по колонкам -->
     <div class="overflow-x-hidden pb-4">
       <div class="w-full">
@@ -14,6 +15,7 @@
             {{ vowel }}
           </div>
         </div>
+
         <!-- Группы строк с названиями -->
         <div class="space-y-3 sm:space-y-4">
           <div v-for="group in HIRAGANA_TABLE_ROWS" :key="group.name" class="kana-row-group">
@@ -23,6 +25,7 @@
             >
               {{ group.name }}
             </div>
+
             <!-- Символы в колонках -->
             <div class="flex gap-1 sm:gap-2 md:gap-3">
               <div
@@ -30,12 +33,11 @@
                 :key="vowelIndex"
                 class="kana-cell flex-1 aspect-square flex flex-col items-center justify-center rounded-lg cursor-pointer transition-all duration-200 relative overflow-hidden min-w-[40px] sm:min-w-[50px] md:min-w-[64px]"
                 :class="getCellClass(symbol)"
-                @click="onKanaClick(symbol)"
-                @touchstart="onTouchStart(symbol)"
-                @touchend="onTouchEnd"
+                @click="handleCellClick(symbol)"
               >
                 <!-- Фон ячейки -->
                 <div class="absolute inset-0 bg-white dark:bg-gray-800 rounded-lg"></div>
+
                 <!-- Прогресс бар -->
                 <div
                   v-if="symbol && progressMap[symbol] !== undefined"
@@ -84,8 +86,12 @@
                     />
                   </svg>
                 </div>
-                <!-- Содержимое ячейки -->
-                <div class="relative z-10 flex flex-col items-center justify-center w-full h-full">
+
+                <!-- Основное содержимое ячейки -->
+                <div
+                  class="relative z-10 flex flex-col items-center justify-center w-full h-full"
+                  v-if="!activeSymbols[symbol!]?.showSvg"
+                >
                   <!-- Символ -->
                   <span class="text-lg sm:text-xl md:text-2xl font-medium mb-0.5">{{
                     symbol
@@ -95,6 +101,40 @@
                     {{ getRomaji(symbol) }}
                   </span>
                 </div>
+
+                <!-- SVG содержимое при активации -->
+                <div
+                  class="relative z-10 w-full h-full flex items-center justify-center"
+                  v-if="activeSymbols[symbol!]?.showSvg"
+                >
+                  <svg
+                    v-if="activeSymbols[symbol!]?.svgData"
+                    :viewBox="activeSymbols[symbol!].viewBox"
+                    class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16"
+                  >
+                    <path
+                      v-for="(path, index) in activeSymbols[symbol!].paths"
+                      :key="index"
+                      :d="path.d"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      :class="{
+                        'opacity-0': activeSymbols[symbol!]?.currentStroke < index,
+                        'animate-draw': activeSymbols[symbol!]?.currentStroke === index,
+                        'opacity-100': activeSymbols[symbol!]?.currentStroke > index,
+                      }"
+                      :style="{
+                        '--stroke-length': path.length,
+                        'animation-duration': `${path.length * 0.01}s`,
+                      }"
+                      @animationend="handleStrokeEnd(symbol!)"
+                    />
+                  </svg>
+                </div>
+
                 <!-- Если символ не существует -->
                 <div
                   v-if="!symbol"
@@ -108,6 +148,7 @@
         </div>
       </div>
     </div>
+
     <!-- Кнопка "Изучить" -->
     <div class="fixed bottom-4 sm:bottom-6 left-0 right-0 px-4 flex justify-center">
       <button
@@ -130,6 +171,23 @@
 import { ref, computed, onMounted } from 'vue'
 import { HIRAGANA_GROUPS } from '@/entities/kana/model'
 import type { Progress } from '@/entities/kana/model'
+import { getPathLength, loadKanjiSvg, useResponsiveVoice } from '@/shared/utils'
+
+const { speak } = useResponsiveVoice()
+
+// Активные символы с SVG данными
+const activeSymbols = ref<
+  Record<
+    string,
+    {
+      showSvg: boolean
+      svgData: string | null
+      viewBox: string
+      paths: { d: string; length: number; width?: number }[]
+      currentStroke: number
+    }
+  >
+>({})
 
 // Создаем таблицу с правильной структурой
 const HIRAGANA_TABLE_ROWS = computed(() => {
@@ -209,8 +267,6 @@ const localProgress = ref<Progress[]>([
   { entityId: 3, progress: 45, updatedAt: '2025-04-01T11:00:00Z' },
 ])
 
-let pressTimer: number | null = null
-const PRESS_DURATION = 500
 const currentLessonSymbols = ref<string[]>([])
 
 const progressMap = computed(() => {
@@ -264,34 +320,107 @@ function getProgressDashArray(progress: number): string {
   return ((progress / 100) * 176).toFixed(2)
 }
 
-function onKanaClick(symbol: string | null) {
-  if (!symbol || pressTimer) return
-  console.log(`Clicked: ${symbol} (${getRomaji(symbol)})`)
-}
+function handleStrokeEnd(symbol: string) {
+  if (!activeSymbols.value[symbol]) return
 
-function onTouchStart(symbol: string | null) {
-  console.log('onTouchStart', symbol)
-  if (!symbol) return
-  pressTimer = window.setTimeout(() => {
-    playSound(symbol)
-    pressTimer = null
-  }, PRESS_DURATION)
-}
-
-function onTouchEnd() {
-  if (pressTimer) {
-    clearTimeout(pressTimer)
-    pressTimer = null
+  const nextStroke = activeSymbols.value[symbol].currentStroke + 1
+  if (nextStroke < activeSymbols.value[symbol].paths.length) {
+    // Переходим к следующему штриху
+    activeSymbols.value = {
+      ...activeSymbols.value,
+      [symbol]: {
+        ...activeSymbols.value[symbol],
+        currentStroke: nextStroke,
+      },
+    }
+  } else {
+    // Все штрихи завершены
+    setTimeout(() => {
+      if (activeSymbols.value[symbol]) {
+        activeSymbols.value = {
+          ...activeSymbols.value,
+          [symbol]: {
+            ...activeSymbols.value[symbol],
+            showSvg: false,
+            currentStroke: 0,
+          },
+        }
+      }
+    }, 2000)
   }
 }
 
-function playSound(romaji: string) {
-  console.log('playSound', romaji)
-  if ('speechSynthesis' in window) {
-    const utterance = new SpeechSynthesisUtterance(romaji)
-    utterance.lang = 'ja-JP'
-    utterance.rate = 0.9
-    speechSynthesis.speak(utterance)
+async function handleCellClick(symbol: string | null) {
+  if (!symbol) return
+
+  // Воспроизводим звук
+  speak(symbol)
+
+  // Если SVG уже загружен, сбрасываем анимацию
+  if (activeSymbols.value[symbol]) {
+    activeSymbols.value = {
+      ...activeSymbols.value,
+      [symbol]: {
+        ...activeSymbols.value[symbol],
+        showSvg: true,
+        currentStroke: 0,
+      },
+    }
+    return
+  }
+
+  // Инициализируем запись для символа
+  activeSymbols.value = {
+    ...activeSymbols.value,
+    [symbol]: {
+      showSvg: true,
+      svgData: null,
+      viewBox: '0 0 109 109',
+      paths: [],
+      currentStroke: 0,
+    },
+  }
+
+  try {
+    // Загружаем SVG
+    const svgText = await loadKanjiSvg(symbol)
+    if (!svgText) {
+      return
+    }
+
+    // Парсим SVG и извлекаем пути
+    const parser = new DOMParser()
+    const svgDoc = parser.parseFromString(svgText, 'image/svg+xml')
+    const paths = Array.from(svgDoc.querySelectorAll('path')).map((path) => {
+      return {
+        d: path.getAttribute('d') || '',
+        length: getPathLength(path.getAttribute('d') || ''),
+        width: path.getAttribute('stroke-width')
+          ? parseFloat(String(path.getAttribute('stroke-width'))) || 3
+          : 3,
+      }
+    })
+
+    // Обновляем данные
+    activeSymbols.value = {
+      ...activeSymbols.value,
+      [symbol]: {
+        showSvg: true,
+        svgData: svgText,
+        viewBox: '0 0 109 109',
+        paths,
+        currentStroke: 0,
+      },
+    }
+  } catch (error) {
+    console.error('Error loading SVG:', error)
+    activeSymbols.value = {
+      ...activeSymbols.value,
+      [symbol]: {
+        ...activeSymbols.value[symbol],
+        showSvg: false,
+      },
+    }
   }
 }
 
@@ -355,9 +484,26 @@ function startLesson() {
 }
 
 onMounted(() => {
-  // await loadProgress();
+  // Инициализация
 })
 </script>
+
+<style>
+@keyframes draw {
+  from {
+    stroke-dashoffset: var(--stroke-length);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw {
+  stroke-dasharray: var(--stroke-length);
+  stroke-dashoffset: var(--stroke-length);
+  animation: draw linear forwards;
+}
+</style>
 
 <style scoped>
 @reference 'tailwindcss';

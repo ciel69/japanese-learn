@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { DrawingBoard } from '@/features/draw-stroke'
-import { loadKanjiData } from '@/utils/kanjivg-loader'
+import { loadKanjiData } from '@/shared/utils'
 
 const route = useRoute()
 const router = useRouter()

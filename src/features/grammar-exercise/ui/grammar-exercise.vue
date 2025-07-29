@@ -75,7 +75,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useResponsiveVoice } from '@/utils'
+import { useResponsiveVoice } from '../../../shared/utils'
 
 type Props = {
   type: 'particle-choice' | 'fill-in-the-blank'

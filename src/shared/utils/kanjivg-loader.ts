@@ -183,17 +183,54 @@ function parsePathD(d: string): Point[] {
 
   return points.length > 0 ? points : [{ x: 0, y: 0 }]
 }
-function parseKanjiSvg(svgText: string) {
+
+export function getPathLength(d: string): number {
+  if (!d) return 0
+
+  // Создаем временный SVG элемент для точного расчета длины
+  const svgNS = 'http://www.w3.org/2000/svg'
+  const svg = document.createElementNS(svgNS, 'svg')
+  svg.style.position = 'absolute'
+  svg.style.visibility = 'hidden'
+  svg.style.width = '0'
+  svg.style.height = '0'
+
+  const path = document.createElementNS(svgNS, 'path')
+  path.setAttribute('d', d)
+
+  svg.appendChild(path)
+  document.body.appendChild(svg)
+
+  let length = 0
+  try {
+    // Используем встроенный метод getTotalLength() для точного расчета
+    length = path.getTotalLength()
+  } catch (e) {
+    console.error('Error calculating path length:', e)
+    // Фолбэк: приблизительный расчет на основе количества команд
+    length = d.length * 0.3
+  }
+
+  document.body.removeChild(svg)
+  return length
+}
+
+export function getPathKanjiSvg(svgText: string) {
   const parser = new DOMParser()
   const doc = parser.parseFromString(svgText, 'image/svg+xml')
-  const strokes: Point[][] = []
 
   // Извлекаем и сортируем штрихи по порядку рисования
-  const strokePaths = Array.from(doc.querySelectorAll('path[id*="-s"]')).sort((a, b) => {
+  return Array.from(doc.querySelectorAll('path[id*="-s"]')).sort((a, b) => {
     const aNum = parseInt(a.id.match(/-s(\d+)/)?.[1] || '0', 10)
     const bNum = parseInt(b.id.match(/-s(\d+)/)?.[1] || '0', 10)
     return aNum - bNum
   })
+}
+
+export function parseKanjiSvg(svgText: string) {
+  // Извлекаем и сортируем штрихи по порядку рисования
+  const strokePaths = getPathKanjiSvg(svgText)
+  const strokes: Point[][] = []
 
   strokePaths.forEach((path) => {
     const pathData = path.getAttribute('d')
