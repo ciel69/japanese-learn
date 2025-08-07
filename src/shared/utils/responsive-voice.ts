@@ -3,7 +3,7 @@ import axios from 'axios'
 const BASE_URL = 'https://94ccfa-85-174-192-193.ru.tuna.am'
 
 export const useResponsiveVoice = () => {
-  const generateVoice = async (text: string) => {
+  const generateVoice = async (text: string, speaker: number = 44) => {
     try {
       const response = await axios.get(`${BASE_URL}/tts/generate`, {
         headers: {
@@ -12,8 +12,9 @@ export const useResponsiveVoice = () => {
           'tuna-skip-browser-warning': 'test-api',
         },
         params: {
-          text: text,
-          speaker: 44, // 44 неплох для каны
+          text,
+          speaker, // 44 неплох для каны
+          pitch: 0.01, // 44 неплох для каны
           volume: 5,
           speed: 1.1,
         },
@@ -33,9 +34,9 @@ export const useResponsiveVoice = () => {
     }
   }
 
-  const speak = async (text: string) => {
+  const speak = async (text: string, speaker = 44) => {
     try {
-      await generateVoice(text)
+      await generateVoice(text, speaker)
     } catch (e: any) {
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = 'ja-JP'

@@ -1,74 +1,80 @@
 <template>
-  <div class="grammar-exercise">
-    <div class="sentence-container">
-      <!-- Отображение предложения с пустыми местами -->
-      <div class="sentence">
-        <span v-for="(part, index) in displayParts" :key="index">
-          <!-- Режим выбора частиц -->
-          <span
-            v-if="part === '___' && task.type === 'particle-choice'"
-            class="blank-slot"
-            @click="removeParticle(index)"
-          >
-            {{ filledBlanks[getBlankIndex(index)] || '___' }}
+  <div class="grid justify-items-center gap-1">
+    <div>
+      <p>Номер спикера</p>
+      <input type="text" class="bg-sky-50 p-1 rounded-lg text-black" v-model="speaker" />
+    </div>
+    <div class="grammar-exercise">
+      <div class="sentence-container">
+        <!-- Отображение предложения с пустыми местами -->
+        <div class="sentence">
+          <span v-for="(part, index) in displayParts" :key="index">
+            <!-- Режим выбора частиц -->
+            <span
+              v-if="part === '___' && task.type === 'particle-choice'"
+              class="blank-slot"
+              @click="removeParticle(index)"
+            >
+              {{ filledBlanks[getBlankIndex(index)] || '___' }}
+            </span>
+
+            <!-- Режим ручного ввода -->
+            <input
+              v-else-if="part === '___' && task.type === 'fill-in-the-blank'"
+              v-model="filledBlanks[getBlankIndex(index)]"
+              class="blank-input"
+              placeholder="?"
+              @keyup.enter="checkAnswer"
+            />
+
+            <!-- Обычная часть предложения -->
+            <span
+              v-else
+              class="word"
+              @click="speak(part, speaker)"
+              v-tooltip="{
+                content: () => getWordTranslation(part),
+                triggers: ['click'],
+                loadingContent: 'Please wait...',
+                autoHide: true,
+              }"
+            >
+              {{ part }}
+            </span>
           </span>
+        </div>
 
-          <!-- Режим ручного ввода -->
-          <input
-            v-else-if="part === '___' && task.type === 'fill-in-the-blank'"
-            v-model="filledBlanks[getBlankIndex(index)]"
-            class="blank-input"
-            placeholder="?"
-            @keyup.enter="checkAnswer"
-          />
-
-          <!-- Обычная часть предложения -->
-          <span
-            v-else
-            class="word"
-            @click="speak(part)"
-            v-tooltip="{
-              content: () => getWordTranslation(part),
-              triggers: ['click'],
-              loadingContent: 'Please wait...',
-              autoHide: true,
-            }"
-          >
-            {{ part }}
-          </span>
-        </span>
-      </div>
-
-      <!-- Варианты частиц для выбора -->
-      <div
-        class="particle-options"
-        v-if="task.type === 'particle-choice' && availableParticles.length > 0"
-      >
+        <!-- Варианты частиц для выбора -->
         <div
-          v-for="(particle, idx) in availableParticles"
-          :key="idx"
-          class="particle-option"
-          @click="selectParticle(particle)"
+          class="particle-options"
+          v-if="task.type === 'particle-choice' && availableParticles.length > 0"
         >
-          {{ particle }}
+          <div
+            v-for="(particle, idx) in availableParticles"
+            :key="idx"
+            class="particle-option"
+            @click="selectParticle(particle)"
+          >
+            {{ particle }}
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Кнопка проверки -->
-    <button
-      class="check-button"
-      @click="checkAnswer"
-      :disabled="!isComplete"
-      :class="{ disabled: !isComplete }"
-    >
-      Проверить
-    </button>
+      <!-- Кнопка проверки -->
+      <button
+        class="check-button"
+        @click="checkAnswer"
+        :disabled="!isComplete"
+        :class="{ disabled: !isComplete }"
+      >
+        Проверить
+      </button>
 
-    <!-- Результат проверки -->
-    <div v-if="showFeedback" class="feedback">
-      <p v-if="isAnswerCorrect" class="correct">✅ Правильно!</p>
-      <p v-else class="incorrect">❌ Неправильно. Правильный ответ: {{ correctAnswerDisplay }}</p>
+      <!-- Результат проверки -->
+      <div v-if="showFeedback" class="feedback">
+        <p v-if="isAnswerCorrect" class="correct">✅ Правильно!</p>
+        <p v-else class="incorrect">❌ Неправильно. Правильный ответ: {{ correctAnswerDisplay }}</p>
+      </div>
     </div>
   </div>
 </template>
@@ -98,6 +104,7 @@ const filledBlanks = ref<(string | null)[]>([])
 const selectedParticles = ref<string[]>([])
 const showFeedback = ref(false)
 const isAnswerCorrect = ref(false)
+const speaker = ref(44)
 
 const { speak } = useResponsiveVoice()
 
@@ -224,7 +231,7 @@ const checkAnswer = () => {
   showFeedback.value = true
 
   if (correct) {
-    speak(fullCompletedSentence.value)
+    speak(fullCompletedSentence.value, speaker.value)
     emit('complete')
   }
 }
