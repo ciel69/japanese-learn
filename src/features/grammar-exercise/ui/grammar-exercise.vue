@@ -101,6 +101,22 @@ const isAnswerCorrect = ref(false)
 
 const { speak } = useResponsiveVoice()
 
+const fullCompletedSentence = computed(() => {
+  let result = ''
+  let blankIndex = 0
+
+  for (const part of sentenceParts.value) {
+    if (part === '___') {
+      result += filledBlanks.value[blankIndex] || '___'
+      blankIndex++
+    } else {
+      result += part.trim()
+    }
+  }
+
+  return result
+})
+
 // Разбиваем предложение на части
 const splitSentence = () => {
   const parts = []
@@ -208,6 +224,7 @@ const checkAnswer = () => {
   showFeedback.value = true
 
   if (correct) {
+    speak(fullCompletedSentence.value)
     emit('complete')
   }
 }
