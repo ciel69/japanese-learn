@@ -2,6 +2,18 @@ import axios from 'axios'
 
 const BASE_URL = 'https://api.kanji-flow.ru'
 
+declare global {
+  interface Window {
+    /**
+     * Типизация сторонней библиотеки responsivevoice.js (https://responsivevoice.org/api/)
+     */
+    responsiveVoice: {
+      speak: (text: string, voice?: string, params?: never) => void
+      // ... другие методы
+    }
+  }
+}
+
 export const useResponsiveVoice = () => {
   const generateVoice = async (text: string, speaker: number = 44) => {
     try {
@@ -37,13 +49,15 @@ export const useResponsiveVoice = () => {
   const speak = async (text: string, speaker = 44) => {
     try {
       await generateVoice(text, speaker)
-    } catch (e: any) {
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = 'ja-JP'
-      utterance.rate = 1.0
-      utterance.pitch = 1.0
+    } catch (e) {
+      if (window.speechSynthesis) {
+        const utterance = new SpeechSynthesisUtterance(text)
+        utterance.lang = 'ja-JP'
+        utterance.rate = 1.0
+        utterance.pitch = 1.0
 
-      speechSynthesis.speak(utterance)
+        speechSynthesis.speak(utterance)
+      }
     }
   }
 
