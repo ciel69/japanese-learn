@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE_URL = 'https://jfks6y-85-174-192-193.ru.tuna.am'
+const BASE_URL = 'https://api.kanji-flow.ru'
 
 export const useResponsiveVoice = () => {
   const generateVoice = async (text: string, speaker: number = 44) => {
