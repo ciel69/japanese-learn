@@ -26,8 +26,8 @@ export const useResponsiveVoice = () => {
         params: {
           text,
           speaker, // 44 неплох для каны
-          pitch: 0.01, // 44 неплох для каны
-          volume: 5,
+          pitch: -0.02,
+          volume: 2.4,
           speed: 1.1,
         },
         responseType: 'arraybuffer', // Получаем как ArrayBuffer
